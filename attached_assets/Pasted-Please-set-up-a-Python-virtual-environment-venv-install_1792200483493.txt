@@ -1,0 +1,167 @@
+Please set up a Python virtual environment (.venv), install the dependencies from requirements.txt, and configure .replit to run Streamlit on port 5000 with:
+streamlit run app.py --server.port 5000 --server.address 0.0.0.0
+
+Next, create the following 3 files in the project root:
+
+1. logic_layer.py
+
+Python
+import re
+
+VAGUE_TERMS = [
+    "optimal", "sufficient", "adequate", "smooth", "minimal",
+    "maximum possible", "low", "high", "reasonable", "fast",
+    "approximate", "acceptable", "good", "standard"
+]
+
+AERO_UNITS = [
+    "m/s", "km/h", "knot", "knots", "mach", "pa", "kpa", "mpa", "bar",
+    "k", "°c", "c", "deg", "rad", "kg/s", "g/s", "n", "kn", "mm", "m",
+    "%", "deg c", "ft", "feet", "psi"
+]
+
+def analyze_spec_logic(text: str) -> dict:
+    text_lower = text.lower()
+    found_vague = []
+    for term in VAGUE_TERMS:
+        matches = re.findall(r'\b' + re.escape(term) + r'\b', text_lower)
+        if matches:
+            found_vague.extend(matches)
+            
+    tokens = re.findall(r'(\b\d+(?:\.\d+)?\b)\s*([a-zA-Z°/%]*)', text_lower)
+    missing_unit_numbers = []
+    valid_unit_numbers = []
+    for num, unit in tokens:
+        if not unit or unit not in AERO_UNITS:
+            missing_unit_numbers.append(num)
+        else:
+            valid_unit_numbers.append(f"{num} {unit}")
+
+    has_imperative = bool(re.search(r'\b(shall|must|required to)\b', text_lower))
+    word_count = max(len(text.split()), 1)
+    ambiguity_penalty = min(len(found_vague) * 15, 60)
+    unit_penalty = min(len(missing_unit_numbers) * 10, 30)
+    imperative_bonus = 0 if has_imperative else 10
+    
+    raw_score = ambiguity_penalty + unit_penalty + imperative_bonus
+    ambiguity_score = min(max(raw_score, 5), 95)
+
+    return {
+        "is_valid_length": word_count >= 25,
+        "word_count": word_count,
+        "vague_words_found": list(set(found_vague)),
+        "missing_unit_numbers": missing_unit_numbers,
+        "valid_unit_numbers": valid_unit_numbers,
+        "has_imperative": has_imperative,
+        "ambiguity_score": round(ambiguity_score, 1)
+    }
+2. database.py
+
+Python
+import sqlite3
+import json
+from datetime import datetime
+import pandas as pd
+
+DB_NAME = "aerospec_audit.db"
+
+def init_db():
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS spec_audits (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT,
+            title TEXT,
+            subsystem TEXT,
+            regime TEXT,
+            raw_text TEXT,
+            ambiguity_score REAL,
+            missing_units_count INTEGER,
+            vague_words_found TEXT,
+            ai_confidence REAL,
+            gaps_json TEXT,
+            questions_json TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
+def save_audit(title, subsystem, regime, raw_text, logic_results, ai_results):
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute('''
+        INSERT INTO spec_audits (
+            timestamp, title, subsystem, regime, raw_text,
+            ambiguity_score, missing_units_count, vague_words_found,
+            ai_confidence, gaps_json, questions_json
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (
+        datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S"),
+        title, subsystem, regime, raw_text,
+        logic_results["ambiguity_score"],
+        len(logic_results["missing_unit_numbers"]),
+        json.dumps(logic_results["vague_words_found"]),
+        ai_results.get("confidence_score", 0.8),
+        json.dumps(ai_results.get("identified_gaps", [])),
+        json.dumps(ai_results.get("clarifying_questions", []))
+    ))
+    conn.commit()
+    conn.close()
+
+def get_all_audits():
+    conn = sqlite3.connect(DB_NAME)
+    df = pd.read_sql_query("SELECT * FROM spec_audits ORDER BY id DESC", conn)
+    conn.close()
+    return df
+3. ai_layer.py
+
+Python
+import os
+from pydantic import BaseModel, Field
+from typing import List
+from openai import OpenAI
+
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY", "dummy_key"))
+
+class GapItem(BaseModel):
+    category: str = Field(description="Category: 'Missing Boundary Physics', 'Ambiguity', or 'Unverifiable Target'")
+    issue: str = Field(description="Specific missing parameter or physical oversight")
+    engineering_impact: str = Field(description="Why the CFD/FEA solver or analyst will be blocked")
+
+class SpecAnalysisOutput(BaseModel):
+    summary: str = Field(description="Brief technical summary of the specification scope")
+    identified_gaps: List[GapItem] = Field(description="List of 2 to 4 technical gaps found")
+    clarifying_questions: List[str] = Field(description="2 to 3 direct questions the lead simulation engineer will ask")
+    confidence_score: float = Field(description="Confidence rating between 0.0 and 1.0 based on spec clarity")
+
+def run_ai_gap_analysis(spec_text: str, subsystem: str, regime: str, logic_summary: dict) -> dict:
+    prompt = f"""
+You are a Principal Aerospace Aerodynamics and CFD Simulation Specialist reviewing a Simulation Work Request.
+Review this specification submitted by a CAD/Design Engineer.
+
+SUBSYSTEM: {subsystem}
+FLOW REGIME: {regime}
+DETERMINISTIC LOGIC PRE-CHECK:
+- Ambiguity Index: {logic_summary['ambiguity_score']}%
+- Vague Adjectives Detected: {logic_summary['vague_words_found']}
+- Numbers without SI units: {logic_summary['missing_unit_numbers']}
+
+SPECIFICATION TEXT:
+\"\"\"{spec_text}\"\"\"
+
+TASK:
+1. Identify missing boundary physics (e.g., inlet turbulence intensity, thermodynamic state/altitude, outlet backpressure, wall roughness, Reynolds number).
+2. Identify overlooked operational edge cases (e.g., angle-of-attack sweep, crosswind gust, transient thermal soak).
+3. Draft the exact 2 to 3 clarifying technical questions the simulation lead will demand before initiating meshing.
+"""
+    response = client.beta.chat.completions.parse(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are a rigid aerospace simulation sign-off auditor adhering to INCOSE and airworthiness verification standards."},
+            {"role": "user", "content": prompt}
+        ],
+        response_format=SpecAnalysisOutput,
+        temperature=0.1
+    )
+    return response.choices[0].message.parsed.model_dump()

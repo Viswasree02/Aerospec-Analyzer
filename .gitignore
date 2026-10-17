@@ -218,3 +218,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Aerospec audit history
+aerospec_audit.db
+aerospec_audit.db-journal
