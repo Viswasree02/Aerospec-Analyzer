@@ -292,16 +292,16 @@ with st.sidebar:
     st.markdown('<p class="eyebrow">AEROSPEC / ANALYZER</p>', unsafe_allow_html=True)
     st.markdown("### Review before simulation")
     if is_ai_configured():
-        st.success("OpenAI analysis · configured")
+        st.success("Gemini analysis · configured")
     else:
-        st.warning("OpenAI analysis · API key needed")
+        st.warning("Gemini analysis · API key needed")
         st.caption(
             "Deterministic checks and the local audit dashboard work without an API key."
         )
     st.divider()
     st.caption("Audit records are stored in a local SQLite database for this project.")
     st.caption(
-        "When AI review runs, the specification text and selected metadata are sent to OpenAI."
+        "When AI review runs, the specification text and selected metadata are sent to Google Gemini."
     )
 
 st.markdown('<p class="eyebrow">ENGINEERING REQUIREMENTS / REVIEW WORKSPACE</p>', unsafe_allow_html=True)
@@ -318,7 +318,7 @@ workspace_tab, dashboard_tab = st.tabs(["New audit", "Audit dashboard"])
 with workspace_tab:
     st.markdown('<p class="section-label">01 / Submit a specification</p>', unsafe_allow_html=True)
     st.info(
-        "AI review sends the submitted specification to OpenAI. Avoid entering "
+        "AI review sends the submitted specification to Google Gemini. Avoid entering "
         "confidential information unless your organization permits that use."
     )
     with st.form("specification_audit_form", clear_on_submit=False):
@@ -380,12 +380,12 @@ with workspace_tab:
                     )
                 except AIConfigurationError:
                     ai_error = (
-                        "OpenAI review was skipped because OPENAI_API_KEY is not "
+                        "Gemini review was skipped because GEMINI_API_KEY is not "
                         "configured. The deterministic audit is still available."
                     )
                 except Exception:
                     ai_error = (
-                        "OpenAI review could not be completed. The deterministic "
+                        "Gemini review could not be completed. The deterministic "
                         "audit is still available; check the API key and account access."
                     )
 
