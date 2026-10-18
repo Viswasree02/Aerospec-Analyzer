@@ -1,0 +1,951 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A project overview of Aerospec Analyzer, an aerospace specification review workspace.">
+  <title>Aerospec Analyzer — Project Overview</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #eaf1f5;
+      --muted: #a5b5c0;
+      --dim: #748795;
+      --panel: #111d27;
+      --panel-2: #142432;
+      --line: rgba(184, 209, 224, .15);
+      --mint: #64d8c3;
+      --blue: #77bce8;
+      --amber: #f0c47b;
+      --red: #ed9292;
+      --bg: #0b1118;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { width: 100%; min-height: 100%; margin: 0; }
+
+    body {
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      background:
+        radial-gradient(ellipse at 15% 5%, rgba(30, 89, 121, .20), transparent 35%),
+        radial-gradient(ellipse at 90% 95%, rgba(38, 106, 96, .12), transparent 34%),
+        #070d12;
+      color: var(--ink);
+      font-family: var(--sans);
+    }
+
+    .deck {
+      position: relative;
+      width: min(100vw, calc((100vh - 78px) * 16 / 9), 1600px);
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      border: 1px solid rgba(184, 209, 224, .13);
+      border-radius: 18px;
+      background: var(--bg);
+      box-shadow: 0 28px 90px rgba(0, 0, 0, .45);
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      padding: 6.2% 7%;
+      overflow: hidden;
+      background:
+        radial-gradient(ellipse at 100% 0%, rgba(30, 89, 121, .15), transparent 37%),
+        var(--bg);
+    }
+
+    .slide.active { display: flex; animation: appear .24s ease-out; }
+
+    @keyframes appear {
+      from { opacity: .55; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .eyebrow, .mono, .slide-count, .tag, .step-no, .micro-label {
+      font-family: var(--mono);
+    }
+
+    .eyebrow {
+      margin: 0 0 1.4rem;
+      color: var(--mint);
+      font-size: clamp(10px, .85vw, 14px);
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+
+    h1 {
+      max-width: 850px;
+      margin-bottom: 1.2rem;
+      font-size: clamp(38px, 5.2vw, 78px);
+      line-height: .99;
+      letter-spacing: -.065em;
+    }
+
+    h2 {
+      max-width: 1050px;
+      margin-bottom: 1.1rem;
+      font-size: clamp(30px, 3.35vw, 52px);
+      line-height: 1.05;
+      letter-spacing: -.045em;
+    }
+
+    h3 {
+      margin-bottom: .65rem;
+      font-size: clamp(17px, 1.5vw, 23px);
+      letter-spacing: -.025em;
+    }
+
+    .lede {
+      max-width: 760px;
+      margin-bottom: 0;
+      color: var(--muted);
+      font-size: clamp(16px, 1.45vw, 22px);
+      line-height: 1.55;
+    }
+
+    .slide-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-top: auto;
+      padding-top: 1.4rem;
+      color: var(--dim);
+      font-family: var(--mono);
+      font-size: clamp(9px, .7vw, 12px);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .rule { height: 1px; margin: 1.6rem 0; background: var(--line); }
+
+    .tag-row { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 2rem; }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: .45rem;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: .55rem .8rem;
+      color: #c8d6df;
+      background: rgba(20, 36, 50, .75);
+      font-size: clamp(10px, .78vw, 13px);
+    }
+
+    .tag::before {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--mint);
+      content: "";
+    }
+
+    .cover {
+      justify-content: center;
+      background:
+        radial-gradient(circle at 79% 46%, rgba(33, 108, 126, .24), transparent 27%),
+        radial-gradient(ellipse at 10% 100%, rgba(26, 72, 75, .21), transparent 38%),
+        var(--bg);
+    }
+
+    .cover-grid {
+      display: grid;
+      grid-template-columns: 1.35fr .85fr;
+      align-items: center;
+      gap: 4%;
+    }
+
+    .cover h1 span { color: var(--mint); }
+
+    .cover-visual {
+      position: relative;
+      display: grid;
+      min-height: 360px;
+      place-items: center;
+    }
+
+    .orbit {
+      position: relative;
+      display: grid;
+      width: min(30vw, 390px);
+      aspect-ratio: 1;
+      place-items: center;
+      border: 1px solid rgba(100, 216, 195, .28);
+      border-radius: 50%;
+      background:
+        radial-gradient(circle, rgba(100, 216, 195, .12) 0 1px, transparent 2px),
+        radial-gradient(circle, transparent 43%, rgba(100, 216, 195, .08) 44% 44.5%, transparent 45%);
+    }
+
+    .orbit::before, .orbit::after {
+      position: absolute;
+      border: 1px solid rgba(119, 188, 232, .18);
+      border-radius: 50%;
+      content: "";
+    }
+
+    .orbit::before { inset: 12%; }
+    .orbit::after { inset: 25%; border-color: rgba(100, 216, 195, .16); }
+
+    .orbit-core {
+      z-index: 1;
+      display: grid;
+      width: 34%;
+      aspect-ratio: 1;
+      place-items: center;
+      border: 1px solid rgba(100, 216, 195, .42);
+      border-radius: 50%;
+      color: var(--mint);
+      background: #10242a;
+      box-shadow: 0 0 55px rgba(100, 216, 195, .15);
+      font-family: var(--mono);
+      font-size: clamp(10px, 1vw, 15px);
+      text-align: center;
+      text-transform: uppercase;
+    }
+
+    .orbit-node {
+      position: absolute;
+      z-index: 2;
+      padding: .55rem .7rem;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: #d6e3ea;
+      background: #142330;
+      font-family: var(--mono);
+      font-size: clamp(9px, .7vw, 12px);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, .24);
+    }
+
+    .orbit-node.one { top: 9%; left: 49%; }
+    .orbit-node.two { right: -2%; bottom: 24%; }
+    .orbit-node.three { bottom: 5%; left: 19%; }
+
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .section-head .lede { max-width: 440px; font-size: clamp(13px, 1vw, 17px); }
+
+    .three-grid, .four-grid {
+      display: grid;
+      gap: 1rem;
+    }
+    .three-grid { grid-template-columns: repeat(3, 1fr); }
+    .four-grid { grid-template-columns: repeat(4, 1fr); }
+
+    .card {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      padding: clamp(15px, 1.55vw, 24px);
+      background: linear-gradient(145deg, rgba(20, 36, 50, .92), rgba(15, 25, 34, .92));
+    }
+
+    .card p, .body-copy {
+      margin-bottom: 0;
+      color: var(--muted);
+      font-size: clamp(12px, 1vw, 16px);
+      line-height: 1.55;
+    }
+
+    .card-index {
+      display: inline-grid;
+      width: 30px;
+      height: 30px;
+      margin-bottom: 1.1rem;
+      place-items: center;
+      border: 1px solid rgba(100, 216, 195, .35);
+      border-radius: 9px;
+      color: var(--mint);
+      background: rgba(100, 216, 195, .08);
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    .impact-strip {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-top: 1.4rem;
+      border: 1px solid rgba(240, 196, 123, .22);
+      border-radius: 11px;
+      padding: 1rem 1.2rem;
+      color: #ead9b9;
+      background: rgba(89, 65, 29, .16);
+      font-size: clamp(12px, 1vw, 16px);
+    }
+
+    .impact-strip strong { color: var(--amber); }
+
+    .flow-line {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      align-items: stretch;
+      gap: .8rem;
+      margin-top: 1.3rem;
+    }
+
+    .flow-card {
+      position: relative;
+      min-height: 188px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      padding: 1.15rem;
+      background: rgba(17, 29, 39, .88);
+    }
+
+    .flow-card:not(:last-child)::after {
+      position: absolute;
+      top: 50%;
+      right: -.8rem;
+      z-index: 2;
+      width: .8rem;
+      height: 1px;
+      background: var(--mint);
+      content: "";
+    }
+
+    .step-no { margin-bottom: 1.05rem; color: var(--mint); font-size: 12px; }
+    .flow-card p { color: var(--muted); font-size: clamp(11px, .88vw, 14px); line-height: 1.5; }
+    .flow-card h3 { font-size: clamp(15px, 1.25vw, 20px); }
+
+    .subsystems {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem;
+      margin-top: 1.35rem;
+    }
+
+    .subsystems span {
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: .42rem .62rem;
+      color: #b9cbd6;
+      background: rgba(17, 29, 39, .7);
+      font-size: clamp(10px, .75vw, 12px);
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 1.3rem;
+      align-items: stretch;
+    }
+
+    .code-panel {
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      overflow: hidden;
+      background: #0d171f;
+    }
+
+    .code-head {
+      display: flex;
+      justify-content: space-between;
+      padding: .8rem 1rem;
+      border-bottom: 1px solid var(--line);
+      color: var(--dim);
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    .parse-row {
+      display: grid;
+      grid-template-columns: 1.2fr 24px 1fr;
+      align-items: center;
+      gap: .6rem;
+      padding: .72rem 1rem;
+      border-bottom: 1px solid rgba(184, 209, 224, .08);
+      font-family: var(--mono);
+      font-size: clamp(10px, .85vw, 14px);
+    }
+
+    .parse-row:last-child { border-bottom: 0; }
+    .parse-row .raw { color: #c8d6df; }
+    .parse-row .arrow { color: var(--dim); text-align: center; }
+    .parse-row .result { color: var(--mint); }
+    .parse-row.warn .result { color: var(--amber); }
+
+    .score-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      padding: clamp(18px, 2vw, 30px);
+      background: linear-gradient(145deg, #152633, #101922);
+    }
+
+    .score-equation {
+      display: grid;
+      gap: .7rem;
+      margin: 1rem 0;
+    }
+
+    .score-equation div {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: .65rem;
+      color: var(--muted);
+      font-size: clamp(12px, .95vw, 15px);
+    }
+
+    .score-equation strong { color: var(--ink); font-family: var(--mono); font-weight: 500; }
+    .score-result { color: var(--mint); font-family: var(--mono); font-size: clamp(20px, 2vw, 30px); }
+
+    .ai-layout {
+      display: grid;
+      grid-template-columns: .8fr 1.2fr;
+      align-items: stretch;
+      gap: 1.2rem;
+    }
+
+    .ai-output {
+      display: grid;
+      gap: .7rem;
+      align-content: start;
+    }
+
+    .output-item {
+      display: grid;
+      grid-template-columns: 30px 1fr;
+      gap: .65rem;
+      align-items: start;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: .8rem;
+      background: rgba(17, 29, 39, .85);
+    }
+
+    .output-item .bullet { color: var(--mint); font-family: var(--mono); }
+    .output-item strong { display: block; margin-bottom: .2rem; font-size: clamp(12px, .96vw, 15px); }
+    .output-item small { color: var(--muted); font-size: clamp(10px, .76vw, 12px); line-height: 1.4; }
+
+    .table-wrap {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(17, 29, 39, .88);
+    }
+
+    .table-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .7rem;
+      padding: .85rem 1rem;
+      border-bottom: 1px solid var(--line);
+      color: var(--ink);
+      font-size: clamp(12px, .96vw, 15px);
+      font-weight: 700;
+    }
+
+    .example-pill {
+      color: var(--amber);
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    th, td { border-bottom: 1px solid rgba(184, 209, 224, .08); padding: .72rem .75rem; text-align: left; vertical-align: top; }
+    th {
+      color: var(--dim);
+      font-family: var(--mono);
+      font-size: clamp(8px, .66vw, 11px);
+      font-weight: 500;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    td { color: #d1dde4; font-size: clamp(9px, .74vw, 12px); line-height: 1.4; }
+    tr:last-child td { border-bottom: 0; }
+    td .param { color: var(--ink); font-weight: 650; }
+    td .symbol { color: var(--mint); font-family: var(--mono); }
+
+    .dashboard-mock {
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      overflow: hidden;
+      background: #0e1821;
+    }
+
+    .dashboard-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1rem 1.2rem;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .dashboard-top strong { font-size: clamp(13px, 1vw, 16px); }
+    .dashboard-top span { color: var(--dim); font-family: var(--mono); font-size: 10px; }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: .65rem;
+      padding: 1rem 1.2rem;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: .75rem;
+      background: rgba(20, 36, 50, .62);
+    }
+
+    .metric small { display: block; margin-bottom: .4rem; color: var(--dim); font-size: clamp(8px, .62vw, 10px); }
+    .metric strong { color: var(--mint); font-family: var(--mono); font-size: clamp(16px, 1.4vw, 22px); }
+
+    .audit-row {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr .8fr .8fr;
+      gap: .7rem;
+      padding: .7rem 1.2rem;
+      border-top: 1px solid rgba(184, 209, 224, .08);
+      color: #bfd0da;
+      font-size: clamp(9px, .72vw, 12px);
+    }
+
+    .audit-row.head {
+      color: var(--dim);
+      font-family: var(--mono);
+      font-size: 9px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .mock-note {
+      padding: .65rem 1.2rem;
+      color: var(--dim);
+      font-family: var(--mono);
+      font-size: 9px;
+      text-align: right;
+    }
+
+    .history-layout {
+      display: grid;
+      grid-template-columns: 1fr .65fr;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .feature-list { display: grid; gap: .65rem; }
+    .feature {
+      display: flex;
+      align-items: flex-start;
+      gap: .75rem;
+      color: var(--muted);
+      font-size: clamp(12px, .94vw, 15px);
+      line-height: 1.45;
+    }
+    .feature b { color: var(--ink); }
+    .feature::before { flex: 0 0 auto; width: 7px; height: 7px; margin-top: .45rem; border-radius: 2px; background: var(--mint); content: ""; }
+
+    .data-flow {
+      display: grid;
+      grid-template-columns: 1fr 22px 1fr 22px 1fr;
+      align-items: center;
+      gap: .5rem;
+      margin: 1.2rem 0;
+    }
+
+    .data-node {
+      min-height: 76px;
+      display: grid;
+      place-content: center;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: .7rem;
+      background: rgba(17, 29, 39, .88);
+      text-align: center;
+    }
+
+    .data-node b { margin-bottom: .3rem; color: var(--ink); font-size: clamp(10px, .8vw, 13px); }
+    .data-node small { color: var(--muted); font-size: clamp(8px, .65vw, 10px); }
+    .data-arrow { color: var(--mint); font-family: var(--mono); text-align: center; }
+
+    .boundary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .boundary-card {
+      min-height: 156px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 1.1rem;
+      background: rgba(17, 29, 39, .84);
+    }
+    .boundary-card .micro-label { margin-bottom: .75rem; color: var(--mint); font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
+    .boundary-card p { margin-bottom: 0; color: var(--muted); font-size: clamp(11px, .88vw, 14px); line-height: 1.5; }
+    .boundary-card strong { color: var(--ink); }
+    .closing { margin-top: 1.25rem; color: var(--mint); font-size: clamp(20px, 2.1vw, 32px); font-weight: 700; letter-spacing: -.04em; }
+
+    .controls {
+      position: fixed;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      height: 64px;
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+
+    .control-button {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      color: var(--ink);
+      background: #111d27;
+      cursor: pointer;
+    }
+    .control-button:hover { border-color: var(--mint); color: var(--mint); }
+    .control-button:focus-visible { outline: 2px solid var(--mint); outline-offset: 2px; }
+
+    .progress {
+      width: min(120px, 15vw);
+      height: 3px;
+      overflow: hidden;
+      border-radius: 9px;
+      background: rgba(184, 209, 224, .15);
+    }
+    .progress span { display: block; height: 100%; width: 14.2%; background: var(--mint); transition: width .2s ease; }
+    .slide-count { min-width: 50px; text-align: center; }
+
+    @media (max-width: 760px) {
+      body { display: block; overflow: auto; }
+      .deck {
+        width: 100%;
+        min-height: calc(100vh - 70px);
+        height: auto;
+        aspect-ratio: auto;
+        border: 0;
+        border-radius: 0;
+      }
+      .slide {
+        position: relative;
+        display: none;
+        min-height: calc(100vh - 70px);
+        padding: 9vw 7vw 12vw;
+        overflow: visible;
+      }
+      .slide.active { display: flex; }
+      .cover-grid, .split, .ai-layout, .history-layout, .boundary-grid { grid-template-columns: 1fr; }
+      .cover-visual { min-height: 210px; }
+      .orbit { width: min(60vw, 270px); }
+      .three-grid, .four-grid, .flow-line { grid-template-columns: 1fr 1fr; }
+      .flow-card { min-height: unset; }
+      .flow-card:not(:last-child)::after { display: none; }
+      .section-head { display: block; }
+      .section-head .lede { margin-top: .7rem; }
+      .metrics { grid-template-columns: 1fr 1fr; }
+      .slide-footer { margin-top: 2rem; }
+      .controls { position: sticky; bottom: 0; background: #070d12; }
+    }
+
+    @media (max-width: 460px) {
+      .three-grid, .four-grid, .flow-line { grid-template-columns: 1fr; }
+      .parse-row { grid-template-columns: 1fr 18px 1fr; padding: .7rem; }
+      th, td { padding: .6rem .45rem; }
+      .audit-row { grid-template-columns: 1.4fr 1fr .7fr; }
+      .audit-row > :last-child { display: none; }
+    }
+
+    @media print {
+      @page { size: 13.333in 7.5in; margin: 0; }
+      body { display: block; overflow: visible; background: #fff; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .deck { width: 13.333in; height: 7.5in; max-width: none; border: 0; border-radius: 0; box-shadow: none; }
+      .slide { display: flex !important; position: relative; width: 13.333in; height: 7.5in; page-break-after: always; break-after: page; }
+      .controls { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="deck" id="deck" aria-label="Aerospec Analyzer project overview">
+    <section class="slide cover active" aria-label="Slide 1 of 7">
+      <div class="cover-grid">
+        <div>
+          <p class="eyebrow">AEROSPEC / ANALYZER · PROJECT OVERVIEW</p>
+          <h1>From engineering request to <span>simulation-ready review.</span></h1>
+          <p class="lede">A focused review workspace for catching ambiguity, missing units, and solver-critical gaps before a specification reaches the meshing queue.</p>
+          <div class="tag-row">
+            <span class="tag">Deterministic pre-checks</span>
+            <span class="tag">Structured Gemini review</span>
+            <span class="tag">Local audit history</span>
+          </div>
+        </div>
+        <div class="cover-visual" aria-hidden="true">
+          <div class="orbit">
+            <span class="orbit-node one">SPEC</span>
+            <span class="orbit-node two">REVIEW</span>
+            <span class="orbit-node three">SOLVER INPUTS</span>
+            <div class="orbit-core">AERO<br>SPEC</div>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer"><span>Engineering requirements / review workspace</span><span>01 — 07</span></div>
+    </section>
+
+    <section class="slide" aria-label="Slide 2 of 7">
+      <p class="eyebrow">01 / THE PROBLEM BEFORE THE SOLVER</p>
+      <div class="section-head">
+        <h2>Small gaps in a request become expensive downstream.</h2>
+        <p class="lede">A simulation can only be as actionable as its inputs. Aerospec puts a review step between design intent and solver setup.</p>
+      </div>
+      <div class="three-grid">
+        <article class="card">
+          <span class="card-index">A</span>
+          <h3>Open-ended language</h3>
+          <p>Words such as “adequate,” “smooth,” or “optimal” leave acceptance criteria open to interpretation.</p>
+        </article>
+        <article class="card">
+          <span class="card-index">B</span>
+          <h3>Unspecified conditions</h3>
+          <p>Boundary physics, operating state, and measurable targets may be missing when the request reaches the analyst.</p>
+        </article>
+        <article class="card">
+          <span class="card-index">C</span>
+          <h3>Late clarification</h3>
+          <p>Questions raised during meshing or solver setup can trigger avoidable handoffs, rework, and delays.</p>
+        </article>
+      </div>
+      <div class="impact-strip"><strong>Review point:</strong><span>make uncertainty visible while the engineer can still resolve it in the work request.</span></div>
+      <div class="slide-footer"><span>Aerospec Analyzer</span><span>02 — 07</span></div>
+    </section>
+
+    <section class="slide" aria-label="Slide 3 of 7">
+      <p class="eyebrow">02 / THE REVIEW WORKFLOW</p>
+      <div class="section-head">
+        <h2>One request moves through four clear stages.</h2>
+        <p class="lede">The workflow pairs quick, repeatable checks with an engineering-focused AI review and a local record of the outcome.</p>
+      </div>
+      <div class="flow-line">
+        <article class="flow-card">
+          <div class="step-no">STEP 01</div>
+          <h3>Submit</h3>
+          <p>Enter a title, subsystem, operating regime, and simulation work request.</p>
+        </article>
+        <article class="flow-card">
+          <div class="step-no">STEP 02</div>
+          <h3>Screen</h3>
+          <p>Check units, vague terms, imperative language, and request length.</p>
+        </article>
+        <article class="flow-card">
+          <div class="step-no">STEP 03</div>
+          <h3>Review</h3>
+          <p>Generate technical gaps, solver inputs, clarifying questions, and confidence.</p>
+        </article>
+        <article class="flow-card">
+          <div class="step-no">STEP 04</div>
+          <h3>Record</h3>
+          <p>Save the audit locally and inspect or export history from the dashboard.</p>
+        </article>
+      </div>
+      <div class="subsystems" aria-label="Specialist subsystem options">
+        <span>Intake &amp; propulsion ducting</span>
+        <span>Wing / aerofoil high-lift devices</span>
+        <span>Fuselage fairings &amp; radomes</span>
+        <span>Thermal control / cooling circuit</span>
+        <span>Pylon &amp; bracket structural mount</span>
+      </div>
+      <div class="slide-footer"><span>Input → checks → engineering review → history</span><span>03 — 07</span></div>
+    </section>
+
+    <section class="slide" aria-label="Slide 4 of 7">
+      <p class="eyebrow">03 / DETERMINISTIC PRE-CHECK</p>
+      <div class="section-head">
+        <h2>Catch common input issues without an AI call.</h2>
+        <p class="lede">The deterministic layer is quick, consistent, and available even when Gemini is not configured.</p>
+      </div>
+      <div class="split">
+        <div class="code-panel">
+          <div class="code-head"><span>Value recognition</span><span>Examples</span></div>
+          <div class="parse-row"><span class="raw">30,000 ft</span><span class="arrow">→</span><span class="result">one value + unit</span></div>
+          <div class="parse-row"><span class="raw">Mach 0.78</span><span class="arrow">→</span><span class="result">dimensionless</span></div>
+          <div class="parse-row"><span class="raw">M = 0.82</span><span class="arrow">→</span><span class="result">dimensionless</span></div>
+          <div class="parse-row"><span class="raw">Re = 1.2e6</span><span class="arrow">→</span><span class="result">dimensionless</span></div>
+          <div class="parse-row warn"><span class="raw">allowable deflection 2.5</span><span class="arrow">→</span><span class="result">unit needed</span></div>
+        </div>
+        <div class="score-card">
+          <div>
+            <p class="micro-label eyebrow">What the pre-check measures</p>
+            <div class="score-equation">
+              <div><span>Vague-term signals</span><strong>+15 each</strong></div>
+              <div><span>Numbers missing units</span><strong>+10 each</strong></div>
+              <div><span>No imperative language</span><strong>+10</strong></div>
+            </div>
+          </div>
+          <div>
+            <p class="body-copy">Signals are capped and combined into a bounded ambiguity index. “Shall,” “must,” and “required to” count as imperative language.</p>
+            <p class="score-result">Index: 5–95%</p>
+          </div>
+        </div>
+      </div>
+      <div class="slide-footer"><span>Repeatable checks, not engineering sign-off</span><span>04 — 07</span></div>
+    </section>
+
+    <section class="slide" aria-label="Slide 5 of 7">
+      <p class="eyebrow">04 / STRUCTURED GEMINI REVIEW</p>
+      <div class="section-head">
+        <h2>Turn missing physics into a usable checklist.</h2>
+        <p class="lede">The AI layer returns a structured review, not just a paragraph: each required input is tied to its solver need and likely source.</p>
+      </div>
+      <div class="ai-layout">
+        <div class="ai-output">
+          <div class="output-item"><span class="bullet">01</span><div><strong>Technical gaps</strong><small>Boundary physics, assumptions, and unverifiable targets.</small></div></div>
+          <div class="output-item"><span class="bullet">02</span><div><strong>Required inputs</strong><small>Exact parameter, symbol/unit, solver necessity, and source.</small></div></div>
+          <div class="output-item"><span class="bullet">03</span><div><strong>Clarifying questions</strong><small>Direct questions for the simulation lead before meshing.</small></div></div>
+          <div class="output-item"><span class="bullet">04</span><div><strong>Confidence score</strong><small>A signal about how complete and clear the submitted request is.</small></div></div>
+        </div>
+        <div class="table-wrap">
+          <div class="table-title"><span>Required Simulation Inputs Checklist</span><span class="example-pill">Illustrative examples</span></div>
+          <table>
+            <thead><tr><th style="width:21%">Parameter</th><th style="width:19%">Symbol &amp; unit</th><th style="width:38%">Why the solver needs it</th><th style="width:22%">Typical source</th></tr></thead>
+            <tbody>
+              <tr><td><span class="param">Static outlet backpressure</span></td><td><span class="symbol">P_out (Pa / bar)</span></td><td>Defines the pressure outlet boundary and affects the computed flow field.</td><td>Engine deck / cycle data</td></tr>
+              <tr><td><span class="param">Freestream turbulence intensity</span></td><td><span class="symbol">Tu (%)</span></td><td>Sets the inlet turbulence condition used by the selected model.</td><td>Wind-tunnel standard / test data</td></tr>
+              <tr><td><span class="param">ISA delta temperature</span></td><td><span class="symbol">ΔT_ISA (K)</span></td><td>Completes the ambient thermodynamic state used to define fluid properties.</td><td>Flight envelope / atmospheric table</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="slide-footer"><span>Google Gemini · structured Pydantic response</span><span>05 — 07</span></div>
+    </section>
+
+    <section class="slide" aria-label="Slide 6 of 7">
+      <p class="eyebrow">05 / AUDIT HISTORY</p>
+      <div class="section-head">
+        <h2>Keep reviews searchable and easy to share.</h2>
+        <p class="lede">The local dashboard makes prior decisions visible without turning the current review into a one-off result.</p>
+      </div>
+      <div class="history-layout">
+        <div class="dashboard-mock" aria-label="Illustrative audit dashboard">
+          <div class="dashboard-top"><strong>Audit dashboard</strong><span>LOCAL SQLITE HISTORY</span></div>
+          <div class="metrics">
+            <div class="metric"><small>Total audits</small><strong>—</strong></div>
+            <div class="metric"><small>Avg. ambiguity</small><strong>—%</strong></div>
+            <div class="metric"><small>High ambiguity</small><strong>—</strong></div>
+            <div class="metric"><small>AI reviewed</small><strong>— / —</strong></div>
+          </div>
+          <div class="audit-row head"><span>Title</span><span>Subsystem</span><span>Risk</span><span>AI status</span></div>
+          <div class="audit-row"><span>Inlet at cruise</span><span>Propulsion</span><span>Moderate</span><span>Complete</span></div>
+          <div class="audit-row"><span>Cooling circuit</span><span>Thermal</span><span>Low</span><span>Logic only</span></div>
+          <div class="mock-note">Illustrative layout — not live project records</div>
+        </div>
+        <div class="feature-list">
+          <div class="feature"><span><b>Search and filter</b> by title, specification, subsystem, and ambiguity level.</span></div>
+          <div class="feature"><span><b>Review key metrics</b> including audit count, ambiguity, and AI-review status.</span></div>
+          <div class="feature"><span><b>Inspect prior reviews</b> with saved specification, gaps, and clarifying questions.</span></div>
+          <div class="feature"><span><b>Export filtered history</b> as CSV for handoff or analysis.</span></div>
+        </div>
+      </div>
+      <div class="slide-footer"><span>Local SQLite persistence · CSV export</span><span>06 — 07</span></div>
+    </section>
+
+    <section class="slide" aria-label="Slide 7 of 7">
+      <p class="eyebrow">06 / DATA FLOW &amp; ENGINEERING BOUNDARIES</p>
+      <div class="section-head">
+        <h2>A review aid with clear data and sign-off boundaries.</h2>
+        <p class="lede">Aerospec helps make a work request more actionable; it does not replace approved engineering procedures.</p>
+      </div>
+      <div class="data-flow" aria-label="Data flow from specification to review">
+        <div class="data-node"><b>Specification</b><small>Text + selected metadata</small></div>
+        <span class="data-arrow">→</span>
+        <div class="data-node"><b>Review layers</b><small>Local checks + Google Gemini</small></div>
+        <span class="data-arrow">→</span>
+        <div class="data-node"><b>Audit record</b><small>Local SQLite history</small></div>
+      </div>
+      <div class="boundary-grid">
+        <article class="boundary-card">
+          <p class="micro-label">Data handling</p>
+          <p>When AI review runs, the <strong>specification text and selected metadata are sent to Google Gemini</strong>. Audit records are stored in the project’s local SQLite database.</p>
+        </article>
+        <article class="boundary-card">
+          <p class="micro-label">Credential &amp; access</p>
+          <p>The AI key is read from the <strong>GEMINI_API_KEY environment secret</strong>. Live model access depends on the configured key, account, and model availability.</p>
+        </article>
+      </div>
+      <p class="closing">Engineering review remains the authority for simulation sign-off.</p>
+      <div class="slide-footer"><span>Aerospec Analyzer · Project overview</span><span>07 — 07</span></div>
+    </section>
+  </main>
+
+  <nav class="controls" aria-label="Slide controls">
+    <button class="control-button" id="previous" type="button" aria-label="Previous slide">←</button>
+    <span class="slide-count" id="slide-count" aria-live="polite">01 / 07</span>
+    <div class="progress" role="progressbar" aria-label="Deck progress" aria-valuemin="1" aria-valuemax="7" aria-valuenow="1"><span id="progress-fill"></span></div>
+    <button class="control-button" id="next" type="button" aria-label="Next slide">→</button>
+  </nav>
+
+  <script>
+    (() => {
+      const slides = Array.from(document.querySelectorAll(".slide"));
+      const count = document.getElementById("slide-count");
+      const progress = document.querySelector(".progress");
+      const fill = document.getElementById("progress-fill");
+      let current = 0;
+
+      function showSlide(index) {
+        current = Math.max(0, Math.min(index, slides.length - 1));
+        slides.forEach((slide, i) => {
+          slide.classList.toggle("active", i === current);
+          slide.setAttribute("aria-hidden", String(i !== current));
+        });
+        count.textContent = `${String(current + 1).padStart(2, "0")} / ${String(slides.length).padStart(2, "0")}`;
+        fill.style.width = `${((current + 1) / slides.length) * 100}%`;
+        progress.setAttribute("aria-valuenow", String(current + 1));
+      }
+
+      document.getElementById("previous").addEventListener("click", () => showSlide(current - 1));
+      document.getElementById("next").addEventListener("click", () => showSlide(current + 1));
+      document.addEventListener("keydown", event => {
+        if (["ArrowRight", "PageDown", " "].includes(event.key)) {
+          event.preventDefault();
+          showSlide(current + 1);
+        } else if (["ArrowLeft", "PageUp"].includes(event.key)) {
+          event.preventDefault();
+          showSlide(current - 1);
+        } else if (event.key === "Home") {
+          showSlide(0);
+        } else if (event.key === "End") {
+          showSlide(slides.length - 1);
+        }
+      });
+      showSlide(0);
+    })();
+  </script>
+</body>
+</html>
