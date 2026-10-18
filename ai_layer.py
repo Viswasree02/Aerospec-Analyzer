@@ -2,12 +2,17 @@ import json
 import os
 from typing import Literal
 
-from openai import OpenAI, OpenAIError
-from pydantic import BaseModel, Field
+from google import genai
+from google.genai import types
+from google.genai.errors import APIError
+from pydantic import BaseModel, Field, ValidationError
+
+
+GEMINI_MODEL = "gemini-3.8-flash"
 
 
 class AIConfigurationError(RuntimeError):
-    """Raised when the OpenAI API key has not been configured."""
+    """Raised when the Gemini API key has not been configured."""
 
 
 class GapItem(BaseModel):
@@ -44,7 +49,7 @@ class SpecAnalysisOutput(BaseModel):
 
 
 def is_ai_configured() -> bool:
-    return bool(os.environ.get("OPENAI_API_KEY", "").strip())
+    return bool((os.environ.get("GEMINI_API_KEY") or "").strip())
 
 
 def run_ai_gap_analysis(
@@ -53,11 +58,11 @@ def run_ai_gap_analysis(
     regime: str,
     logic_summary: dict,
 ) -> dict:
-    """Request a structured aerospace specification review from OpenAI."""
-    api_key = os.environ.get("OPENAI_API_KEY", "").strip()
-    if not api_key:
+    """Request a structured aerospace specification review from Gemini."""
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key or not api_key.strip():
         raise AIConfigurationError(
-            "OPENAI_API_KEY is not configured in this Replit project."
+            "GEMINI_API_KEY is not configured in this Replit project."
         )
 
     prompt = f"""
@@ -86,30 +91,29 @@ TASK:
    of the supplied specification.
 """
 
+    client = genai.Client(api_key=api_key.strip())
     try:
-        client = OpenAI(api_key=api_key)
-        response = client.beta.chat.completions.parse(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are a rigorous aerospace simulation sign-off auditor "
-                        "adhering to INCOSE and airworthiness verification standards."
-                    ),
-                },
-                {"role": "user", "content": prompt},
-            ],
-            response_format=SpecAnalysisOutput,
-            temperature=0.1,
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                response_schema=SpecAnalysisOutput,
+                temperature=0.1,
+            ),
         )
-    except OpenAIError as exc:
+    except APIError as exc:
         raise RuntimeError(
-            "OpenAI could not complete the specification review. Check the "
-            "project's API key, account access, and network connection."
+            "Gemini could not complete the specification review. Check the "
+            "project's API key, model access, and network connection."
         ) from exc
 
-    parsed = response.choices[0].message.parsed
-    if parsed is None:
-        raise RuntimeError("OpenAI returned no structured analysis.")
+    if not response.text:
+        raise RuntimeError("Gemini returned no structured analysis.")
+    try:
+        parsed = SpecAnalysisOutput.model_validate_json(response.text)
+    except ValidationError as exc:
+        raise RuntimeError(
+            "Gemini returned a response that did not match the expected schema."
+        ) from exc
     return parsed.model_dump()
