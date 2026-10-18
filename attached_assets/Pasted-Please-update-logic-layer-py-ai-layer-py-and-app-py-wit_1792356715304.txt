@@ -1,0 +1,40 @@
+Please update logic_layer.py, ai_layer.py, and app.py with the following refinements:
+
+Regex & Dimensionless Quantities (logic_layer.py):
+
+Handle comma-separated numbers properly (e.g., 30,000 ft must be parsed as a single value 30,000 with unit ft).
+
+Add a check for dimensionless quantities: do NOT flag numbers associated with Mach (Mach 0.78, M=0.78, M 0.78) or Reynolds number (Re) as missing units.
+
+Subsystem Dropdown (app.py):
+
+Update the Subsystem dropdown list to include:
+["Intake & Propulsion Ducting", "Wing / Aerofoil High-Lift Devices", "Fuselage Fairings & Radomes", "Thermal Control / Cooling Circuit", "Pylon & Bracket Structural Mount"].
+
+Structured Missing Inputs Engine (ai_layer.py):
+
+Update the Pydantic schema SpecAnalysisOutput to include a structured parameter list:
+
+Python
+class MissingParameter(BaseModel):
+    parameter_name: str = Field(description="Exact parameter name, e.g., 'Static Outlet Backpressure', 'Freestream Turbulence Intensity', 'ISA Delta Temperature'")
+    symbol_and_unit: str = Field(description="Standard engineering symbol and expected unit, e.g., 'P_out (Pa / bar)', 'Tu (%)', 'ΔT_ISA (K)'")
+    solver_necessity: str = Field(description="Explicit technical reason the CFD/FEA solver cannot initialize or converge without this")
+    typical_source: str = Field(description="Where the engineer retrieves this value, e.g., 'Engine Deck / Cycle Data', 'Flight Envelope / Atmospheric Table', 'Wind Tunnel Standard'")
+Add missing_parameters: List[MissingParameter] to SpecAnalysisOutput.
+
+Adjust the system prompt to mandate that whenever a specification is missing required boundary physics, it must populate this list with concrete, exact variables.
+
+UI Presentation (app.py):
+
+In the AI Engineering Review section, display these missing inputs as a prominent, dedicated "Required Simulation Inputs Checklist" rendered as a clean Streamlit table or structured card deck showing:
+
+Parameter Name
+
+Symbol & Unit
+
+Solver Necessity
+
+Source
+
+Keep all other existing features intact and restart the Streamlit server on port 5000 when finished.

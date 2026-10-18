@@ -46,6 +46,20 @@ AERO_UNITS = {
     "psi",
 }
 
+NUMBER_WITH_UNIT_RE = re.compile(
+    r"(?<![\w.,])"
+    r"(?P<number>(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?(?:e[+-]?\d+)?)"
+    r"(?!,\d)"
+    r"(?:\s*(?P<unit>[a-z°%]+(?:/[a-z]+)?))?",
+    re.IGNORECASE,
+)
+
+DIMENSIONLESS_PREFIX_RE = re.compile(
+    r"(?:\b(?:m|mach|re)\b|\b(?:mach|reynolds)(?:\s+number)?\b)"
+    r"\s*(?:(?:=|:)|\bis\b)?\s*$",
+    re.IGNORECASE,
+)
+
 
 def analyze_spec_logic(text: str) -> dict:
     """Run deterministic checks for vague language, units, and requirements."""
@@ -57,15 +71,20 @@ def analyze_spec_logic(text: str) -> dict:
         if re.search(r"\b" + re.escape(term) + r"\b", text_lower):
             found_vague.append(term)
 
-    # Keep the unit token together for common compound units such as m/s and kg/s.
-    tokens = re.findall(
-        r"(?<![\w.])(\d+(?:\.\d+)?)(?:\s*([a-zA-Z°%]+(?:/[a-zA-Z]+)?))?",
-        text_lower,
-    )
+    # Keep grouped numbers and compound units together (e.g. 30,000 ft and m/s).
     missing_unit_numbers = []
     valid_unit_numbers = []
-    for number, unit in tokens:
+    for match in NUMBER_WITH_UNIT_RE.finditer(text):
+        number = match.group("number")
+        unit = match.group("unit") or ""
         normalized_unit = unit.strip().lower()
+        preceding_text = text[: match.start("number")]
+        is_dimensionless = bool(
+            DIMENSIONLESS_PREFIX_RE.search(preceding_text)
+            or normalized_unit == "re"
+        )
+        if is_dimensionless:
+            continue
         if not normalized_unit or normalized_unit not in AERO_UNITS:
             missing_unit_numbers.append(number)
         else:

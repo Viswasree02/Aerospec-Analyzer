@@ -171,6 +171,21 @@ def render_audit_results(audit: dict) -> None:
                 st.markdown(f'**Issue:** {gap["issue"]}')
                 st.markdown(f'**Engineering impact:** {gap["engineering_impact"]}')
 
+        st.markdown("#### Required Simulation Inputs Checklist")
+        missing_parameters = ai.get("missing_parameters", [])
+        if missing_parameters:
+            checklist = pd.DataFrame(missing_parameters).rename(
+                columns={
+                    "parameter_name": "Parameter Name",
+                    "symbol_and_unit": "Symbol & Unit",
+                    "solver_necessity": "Solver Necessity",
+                    "typical_source": "Source",
+                }
+            )
+            st.dataframe(checklist, width="stretch", hide_index=True)
+        else:
+            st.success("No additional required simulation inputs were identified.")
+
         st.markdown("#### Questions for the simulation lead")
         for question in ai["clarifying_questions"]:
             st.markdown(f"- {question}")
@@ -337,6 +352,11 @@ with workspace_tab:
                 "Thermal",
                 "Controls",
                 "Other",
+                "Intake & Propulsion Ducting",
+                "Wing / Aerofoil High-Lift Devices",
+                "Fuselage Fairings & Radomes",
+                "Thermal Control / Cooling Circuit",
+                "Pylon & Bracket Structural Mount",
             ],
         )
         regime = regime_col.selectbox(
